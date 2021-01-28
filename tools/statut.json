@@ -1,0 +1,7 @@
+{
+    "messages" : [
+        {"id" : 1, "status" : "online", "activity" : {"name" : "Support SurvivalWorld", "type": "COMPETING"}},
+        {"id" : 2, "status" : "online", "activity" : {"name" : "Ouvert de 10h à 23h (heure Française)", "type" : "WATCHING"}},
+        {"id" : 3, "status" : "online", "activity" : {"name" : "play.survivalworld.fr", "type" : "PLAYING"}}
+    ]
+}

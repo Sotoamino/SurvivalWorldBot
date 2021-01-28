@@ -1,0 +1,8 @@
+{
+    "aide" : [
+        "aide", "help", "modo", "secours", "admin"
+    ],
+    "blacklist" : [
+        "con", "salop", "idio", "abruti", "batard", "bâtard", "enculé", "bite", "sexe", "put", "debil", "débil", "merd", "niqu", "pd", "foutre", "gueul", "salau", "hitler", "feuj", "nigga", "negr", "négr", "nègr", "couille", "couile", "fdp"
+    ]
+}
