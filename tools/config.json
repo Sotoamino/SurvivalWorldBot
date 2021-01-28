@@ -1,1 +1,4 @@
-
+{"TOKEN":"","PREFIX":",","ticket" : [
+    {"id": "member","allow":["VIEW_CHANNEL"]},
+    {"id": "id","deny":["VIEW_CHANNEL"]}
+]}
