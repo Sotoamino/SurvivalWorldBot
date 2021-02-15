@@ -217,16 +217,28 @@ client.on("channelCreate", async(verif) => { //Détecte si un channel a été cr
             let role = verif.guild.roles.cache.find(role => role.id === links.supportrole)
             let arr = new Array();
             role.members.forEach(user => {
-                arr.push(`<@${user.user.id}>`);
+                if(user.user.presence.status === "online" || user.user.presence.status === "idle") {
+                    arr.push(`<@${user.user.id}>`);
+                }
             });
-            client.channels.cache.get(links.supportchan).send("test"+arr.join('\n')).then((msg) => {
-                setTimeout(() => {  
-                    msg.delete()
-                },60000)
-            });
+            if(arr.length === 0) {
+                client.channels.cache.get(links.supportchan).send("Un joueur est présent en **Vocal support**").then((msg) => {
+                    setTimeout(() => {  
+                        msg.delete()
+                    },60000)
+                })
+            }
+            else {
+                client.channels.cache.get(links.supportchan).send("Un joueur est présent en **Vocal support**\n\n"+arr.join('\n')).then((msg) => {
+                    setTimeout(() => {  
+                        msg.delete()
+                    },60000)
+                })
+            }
         }
     }
 });
+
 
 function sleep(milliseconds) {
     const date = Date.now();
