@@ -1,10 +1,18 @@
 const Discord = require("discord.js");
 const fs = require('fs');
-
-const BOTdata = JSON.parse(fs.readFileSync('./tools/config.json'));
-
+const { PREFIX , TOKEN} = JSON.parse(fs.readFileSync('./tools/config.json'));
 const client = new Discord.Client();
-client.login(BOTdata.TOKEN);
+client.login(TOKEN);
+client.commandes = new Discord.Collection();
+const commandFiles = fs.readdirSync('./commandes').filter(file => file.endsWith('.js'));
+const cooldowns = new Discord.Collection();
+
+let prefix = PREFIX
+
+for (const file of commandFiles) {
+	const commande = require(`./commandes/${file}`);
+	client.commandes.set(commande.name, commande);
+}
 
 client.on('ready', () => {
     console.log("Bot connecté.")
@@ -29,7 +37,7 @@ client.on('ready', () => {
             .setImage(message.image)
             .setFooter("Le support SurvivalWorld", "https://survivalworld.fr/img/uploads/theme_logo.png")
         c.send(AutoEmbed)
-    }, 1000);
+    }, 2160000);
 })
 
 client.on('message', (message) => { //envoi vers le salon aide si
@@ -76,187 +84,58 @@ client.on('message', message => {
     }
 })
 
-client.on('message', message => {
-    const opt = JSON.parse(fs.readFileSync('./tools/config.json')); // récupérer les données
-    if(message.author.bot || !message.content.startsWith(opt.PREFIX)) return;
-    const args = message.content.slice(opt.PREFIX.length).trim().split(/ +/g);
-    const command = args.shift().toLowerCase()
 
+client.on('message', message => { //commande Publique
 
+	if(JSON.parse(fs.readFileSync('./tools/config.json')).maintenance) return message.channel.send('Erreur, le bot est en maintenance');
 
-    if(command === "aide" || command === "help") {
-        let content = JSON.parse(fs.readFileSync('./tools/help.json'))
-        let opt = JSON.parse(fs.readFileSync('./tools/config.json'))
-
-        u = 0
-        let text = ""
-
-        const embed = new Discord.MessageEmbed()      
-            .setTitle("AIDE - Liste des commandes")
-            .setColor("#ffa500")
-            .setDescription("Prefix : "+opt.PREFIX)
-            .setFooter(opt.PREFIX+"aide - Made By SurvivalWorld")
-        if(message.guild.member(message.author).hasPermission("ADMINISTRATOR")) {
-            text = "admin"
-        } else if(message.guild.member(message.author).hasPermission("MANAGE_ROLES")) {
-            text = "rs"
-        } else if(message.guild.member(message.author).hasPermission("MANAGE_MESSAGES")) {
-            text = "staff"
-        } else {
-            text = "player"
-        }
-        let obj = content[text]
-        while (u < obj.length) {
-            obj[u].name = opt.PREFIX+obj[u].name
-            u+= 1
-        }
-        embed.addFields(content[text])
-        message.channel.send(embed)
-    }
-    
-    
-    
-    else if(command === "clear" || command === "clr") {
-        if(message.guild.member(message.author).hasPermission("MANAGE_ROLES")) {
-            let longueur = parseInt(args.shift())
-            if(longueur > 150 ) return message.channel.send("Erreur, vous êtes limité à 150 messages lors d'une suppression.")
-            
-            message.channel.bulkDelete(longueur)
-            message.channel.send(`J'ai supprimé ${longueur} messages.`).then(msg => {
-                sleep(2500)
-                msg.delete()
-            })
-        } else if(message.guild.member(message.author).hasPermission("MANAGE_MESSAGES")) {
-            let longueur = parseInt(args.shift())
-            if(longueur > 30) return message.channel.send("Erreur, vous êtes limité à 30 messages lors d'une supression.")
-            message.channel.bulkDelete(longueur)
-            message.channel.send(`J'ai supprimé ${longueur} messages.`).then(msg => {
-                sleep(2500)
-                msg.delete()
-            })
-        } else return message.channel.send("Erreur, vous n'avez pas la permission d'éxecuter cette commande")
-    }
-    
-    
-    
-    else if (command === "manage") {
-        let subcommand = args.shift();
-        if(subcommand === "prefix") {
-            if(!message.guild.member(message.author).hasPermission("ADMINISTRATOR")) return message.channel.send("Erreur, vous n'avez pas la permission d'éxecuter cette commande.")
-            let prefix = args.shift()
-            opt.PREFIX = prefix
-            message.channel.send('Nouveau prefix défini à :'+opt.PREFIX)
-            fs.writeFileSync('./tools/config.json', JSON.stringify(opt))
-        } else if(subcommand === "aidechan") {
-            if(!message.guild.member(message.author).hasPermission("MANAGE_ROLES")) return message.channel.send("Erreur, vous n'avez pas la permission d'éxecuter cette commande.")
-
-            let links = JSON.parse(fs.readFileSync('./tools/link.json'))
-            links.aidechan = args.shift().substring(2,salon.length-1);
-            fs.writeFileSync('./tools/link.json', JSON.stringify(links))
-        }
-        else if(subcommand === "supportchan") {
-            if(!message.guild.member(message.author).hasPermission("MANAGE_ROLES")) return message.channel.send("Erreur, vous n'avez pas la permission d'éxecuter cette commande.")
-
-            let links = JSON.parse(fs.readFileSync('./tools/link.json'))
-            links.supportchan = args.shift().substring(2,salon.length-1);
-            fs.writeFileSync('./tools/link.json', JSON.stringify(links))
-        }
-    }
-    
-    
-    
-    else if(command === "ticket"){
-        if(message.guild.member(message.author).hasPermission("MANAGE_ROLES")) return message.channel.send("Erreur, vous n'avez pas la permission d'éxecuter cette commande.")
-        const TicketEmbed = new Discord.MessageEmbed()
-        .setColor("#ff0000")
-        .setAuthor("Problème Admin")
-        .setDescription("Si vous rencontrez un problème nécessitant l'intervention d'un administrateur, veuillez ouvrir un ticket") 
-        message.channel.send(TicketEmbed).then(async msg => {
-            msg.react("🎟️")
-            let data = JSON.parse(fs.readFileSync('./tools/tickets.json'))
-            data.tickets.push(msg.channel.id)
-            fs.writeFileSync('./tools/tickets.json',JSON.stringify(data))
-        })
-    }
-    
-    
-    
-    else if(command === "managemsg"){
-        if(!message.guild.member(message.author).hasPermission("MANAGE_ROLES")) return message.channel.send(":warning: Erreur ! Vous n'avez pas la permission d'éxecuter cette commande.");
-        if(!args[0]) return message.reply("Syntaxe: `"+opt.PREFIX+"managemsg <add | view | del>`")
-        if(args[0] === "add") {
-            if(!args[1]) return message.channel.send("Erreur, vous devez mettre le message à ajouter tel que <titre> == <message>")
-            let data = JSON.parse(fs.readFileSync("./tools/messages.json"))
-            args.splice(0, 1)
-            let contenu = args.join(" ").split("==");
-            let newm = {
-                id : (data.automessages.length+1).toString(),
-                title : ":pushpin: __**Informations**__ :pushpin:",
-                content : {
-                    name : contenu[0],
-                    value : contenu[1]
-                },
-                image : ""
-            }
-            data.automessages.push(newm)
-            fs.writeFileSync('./tools/messages.json', JSON.stringify(data))
-            const embedAdd = new Discord.MessageEmbed()
-                .setTitle("Ajout de message")
-                .setDescription(`Bonjour ${message.author.username} Vous avez parfaitement ajouté le message suivant à la liste des messages automatiques.`)
-                .addField(newm.content.name,newm.content.value)
-                .setFooter("Pannel Responsable Staff - Ajout de messages automatiques")
-            message.channel.send(embedAdd)
-        }
-        if(args[0] === "view") {
-            let data = JSON.parse(fs.readFileSync("./tools/messages.json"))
-            cpt = 1
-            let tab = []
-            const embed = new Discord.MessageEmbed()
-                .setTitle("Liste des messages")
-                .setDescription("Couleur : Aléatoire\nTitre : :pushpin: __**Informations**__ :pushpin:\n\nAffichage tel que : \n`identifiant` - Titre\nContenu du message")
-                .setColor("RANDOM")
-                .setFooter("Pannel Responsable Staff - Vue des messages automatiques")
-                while(cpt <= data.automessages.length) {
-                    tab.push({name : "`"+data.automessages[cpt-1].id+"` - "+ data.automessages[cpt-1].content.name, value: data.automessages[cpt-1].content.value})
-                    cpt +=1
-                }
-            embed.addFields(tab)
-            message.reply(embed)
-        }
-        if(args[0] === "del") {
-            if(!args[1]) return message.channel.send("Erreur, vous devez mettre l'identifiant du message (voir `"+opt.PREFIX+"managemsg view`)")
-            let data = JSON.parse(fs.readFileSync("./tools/messages.json"))
-            let retour = data.automessages.splice(data.automessages.indexOf(data.automessages.find(msg => msg.id === args[1])))
-            if(!retour) return message.channel.send("Aucun message ,n'a été trouvé avec l'identifiant "+args[1])
-            message.reply("Vous avez supprimé le message suivant :")
-            const embedDel = new Discord.MessageEmbed()
-                .setTitle("Supression de message automatique")
-                .setDescription(`Bonjour ${message.author.username} Vous avez parfaitement supprimé le message suivant à la liste des messages automatiques.`)
-                .addField(retour[0].content.name, retour[0].content.value)
-                .setFooter("Pannel Responsable Staff - Ajout de messages automatiques")
-                message.channel.send(embedDel)
-            fs.writeFileSync('./tools/messages.json', JSON.stringify(data))
-        }
-    }
-    
-    
-    else if (command === "botinfo") {
-        const embed = new Discord.MessageEmbed()
-            .setTitle('SurvivalWorld BOT')
-            .setDescription('BOT SUPPORT SURVIVALWORLD')
-            .setColor('#00cc00')
-            .setFooter('Crée par Gohan#0002 et Sotoamino#7721 | ,aide',"https://survivalworld.fr/img/uploads/theme_logo.png")
-            .setImage('https://survivalworld.fr/img/uploads/theme_logo.png')
-            .setAuthor("SurvivalWorld.fr : Survie 1.8 -> 1.16.2", "https://survivalworld.fr/img/uploads/theme_logo.png","https://survivalworld.fr/")
-            .addField("Mon utilité:", "Je suis un bot utilitaire, qui partage certaines informations dans les salons aides.")
-        message.channel.send(embed);
-    }
-    message.delete()
-})
-
-
-
-
+	if (!message.content.startsWith(prefix) || message.author.bot) return;
+	const args = message.content.slice(prefix.length).trim().split(/ +/);
+	const commandName = args.shift().toLowerCase();
+	const command = client.commandes.get(commandName)
+		|| client.commandes.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+	if (!command) return;
+	if (command.guildOnly && message.channel.type === 'dm') {
+		return message.reply('Je ne peux pas executer cette commande dans des messages privés');
+	}
+	if (command.permissions) {
+		const authorPerms = message.channel.permissionsFor(message.author);
+		if (!authorPerms || !authorPerms.has(command.permissions)) {
+			return message.reply('Vous n\'avez pas la permission d\'executer cette commande!');
+		}
+	}
+	if (command.args && !args.length) {
+		let reply = `Vous n'avez fourni aucun arguments, ${message.author}!`;
+		if (command.usage) {
+			reply += `\nLe bon usage est: \`${prefix}${command.name} ${command.usage}\``;
+		}
+		return message.channel.send(reply);
+	}
+	if (!cooldowns.has(command.name)) {
+		cooldowns.set(command.name, new Discord.Collection());
+	}
+	const now = Date.now();
+	const timestamps = cooldowns.get(command.name);
+	const cooldownAmount = (command.cooldown || 3) * 1000;
+	if (timestamps.has(message.author.id)) {
+		const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
+		if (now < expirationTime) {
+			const timeLeft = (expirationTime - now) / 1000;
+			return message.reply(`Veuillez patienter ${timeLeft.toFixed(1)} secondes avant de refaire la commande \`${command.name}\`.`);
+		}
+	}
+	timestamps.set(message.author.id, now);
+	setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
+	try {
+		command.execute(message, args);
+		console.log(`Commande | ${command.name} ${args} - ${message.author.username}`)
+        if(message.channel.type === 'dm') return;
+		message.delete()
+	} catch (error) {
+		console.error(error);
+		message.reply(`Il y a eu une erreur lors de l'execution de la commande.\n\n\`${error.message}\``);
+	}
+});
 
 client.on("messageReactionAdd", (reaction, user) => {
     if(user.bot) return;
@@ -267,10 +146,11 @@ client.on("messageReactionAdd", (reaction, user) => {
     const member = message.guild.members.cache.get(user.id)
     const everyone = message.guild.roles.cache.find(role => role.name === '@everyone')
     let searcher = ticketdata.tickets.find(search => search === message.channel.id)
-    if(!searcher) return;
+
     if(["🎟️", "🔒","✔️","❌"].includes(reaction.emoji.name)) {
         switch(reaction.emoji.name) {
             case "🎟️":
+                if(message.channel.id !== JSON.parse(fs.readFileSync('./tools/tickets.json')).opener) return;
             reaction.users.remove(member)
             let categoryID = links.pbAdmin; //Categorie ou mettre les tickets
             var bool = false;
@@ -297,16 +177,19 @@ client.on("messageReactionAdd", (reaction, user) => {
             })
             break;
             case "🔒":
+                if(!searcher) return;
             reaction.users.remove(member)
-            message.channel.send("**Êtes vous sûr ?**").then(async verif => {
+            message.channel.send("**Vous êtes sur le point de fermer votre ticket.\n En êtes vous sûr ?**").then(async verif => {
                 await verif.react("✔️")
                 await verif.react("❌")
             })
             break;
             case "❌" :
+                if(!searcher) return;
                 message.channel.bulkDelete(1)
                 break;
             case "✔️" :
+                if(!searcher) return;
                 message.channel.send('**Suppression du channel dans** ***10*** **secondes.**')
                     setTimeout(() => {
                         message.channel.delete()
@@ -331,15 +214,19 @@ client.on("channelCreate", async(verif) => { //Détecte si un channel a été cr
         }); //Send le msg
         }
         else {
-            client.channels.cache.get(links.supportchan).send("information: Un joueur est présent en Support").then((msg) => {
+            let role = verif.guild.roles.cache.find(role => role.id === links.supportrole)
+            let arr = new Array();
+            role.members.forEach(user => {
+                arr.push(`<@${user.user.id}>`);
+            });
+            client.channels.cache.get(links.supportchan).send("test"+arr.join('\n')).then((msg) => {
                 setTimeout(() => {  
                     msg.delete()
                 },60000)
-            }); //Send le msg 
+            });
         }
     }
 });
-
 
 function sleep(milliseconds) {
     const date = Date.now();
